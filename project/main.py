@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+from datetime import datetime
 
 # The URL to gather data from
 resource = requests.get("https://listen.klove.com/Christmas")
@@ -14,10 +15,12 @@ else:  # If no error is found, proceed to scrape.
     raw_data = BeautifulSoup(content, 'html.parser')
     song_title = raw_data.find(id='nowPlaying-title')
     song_artist = raw_data.find(id='nowPlaying-artist')
-    print(song_title.string)
-    print(song_artist.string)
+    scrape_time = datetime.now().strftime("%m-%d-%Y %I:%M %p")
+    print(f'Song Title:  {song_title.string}')
+    print(f'Song Artist: {song_artist.string}')
+    print(f'Scrape Time: {scrape_time}')
 
-
-#TODO: Append to .CSV File
-#TODO: Spotify API stuff
-#TODO: Configurable settings (freqeuncy, exclude dupes,
+# TODO: Append to .CSV File
+# TODO: Spotify API stuff
+# TODO: Configurable settings (scrape freqeuncy, exclude dupes, timestamp output)
+# TODO: Run quietly in background
