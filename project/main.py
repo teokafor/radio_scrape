@@ -23,7 +23,7 @@ def main():
 
         # Grab and format data
         content = resource.content
-        raw_data = BeautifulSoup(content, 'html.parser')
+        raw_data = BeautifulSoup(content.decode('utf-8'), 'html.parser')
 
         # Collect necessary information
         song_title = raw_data.find(id='nowPlaying-title').string
@@ -82,6 +82,5 @@ if __name__ == "__main__":
     main()
 
 # TODO: Spotify API stuff
-# TODO: Configurable settings (scrape frequency, exclude dupes, timestamp output)
 # TODO: Run quietly in background
-# TODO: Fix weird accent marks in output (e.g., für)
+# TODO: Add command line functionality (help, config settings)
