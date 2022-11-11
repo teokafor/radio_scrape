@@ -1,12 +1,13 @@
 import os
+import time
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 import csv
 
 SCRAPE_FREQUENCY = 30  # The time (in seconds) that the website should be checked.
-IGNORE_WRITE_TIME = 15  # If songs found are the same as the last entry and are under this value, then ignore write.
-
+IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are under this value, then ignore write.
+TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 
 def main():
     # The URL to gather data from
@@ -19,42 +20,38 @@ def main():
         exit()
     else:  # If no error is found, proceed to scrape.
 
+        while True:  # Loop until the program is closed
+
+            # Grab and format data
+            content = resource.content
+            raw_data = BeautifulSoup(content, 'html.parser')
+
+            # Collect necessary information
+            song_title = raw_data.find(id='nowPlaying-title').string
+            song_artist = raw_data.find(id='nowPlaying-artist').string
+            scrape_date = datetime.now().strftime("%m-%d-%Y")
+            scrape_time = datetime.now().strftime(TIME_FORMAT)
+
+            # Compile data into a writable list object
+            song_data = [song_title, song_artist, scrape_date, scrape_time]
+
+            # Print output
+            print(f'\nSong Title:  {song_data[0]}\nSong Artist: {song_data[1]}'
+                  f'\nScrape Date: {song_data[2]}\nScrape Time: {song_data[3]}\n')
 
 
-        #while True:  # Loop until the program is closed
+            # Write contents to CSV file
+            with open('song_output.csv', 'r+', newline='') as song_output:  # Open for reading and appending
+                writer = csv.writer(song_output, delimiter=',')
+                reader = csv.reader(song_output, delimiter=',')
 
-        # Grab and format data
-        content = resource.content
-        raw_data = BeautifulSoup(content, 'html.parser')
-
-        # Collect necessary information
-        song_title = raw_data.find(id='nowPlaying-title').string
-        song_artist = raw_data.find(id='nowPlaying-artist').string
-        scrape_date = datetime.now().strftime("%m-%d-%Y")
-
-        time_format = "%H:%M"
-        scrape_time = datetime.now().strftime(time_format)
-
-        song_data = [song_title, song_artist, scrape_date, scrape_time]
-
-        # Print output
-        #print(f'Song Title:  {song_data[0]}')
-        #print(f'Song Artist: {song_data[1]}')
-        #print(f'Scrape Date: {song_data[2]}')
-        #print(f'Scrape Time: {song_data[3]}')
-
-        # Write contents to CSV file
-        with open('song_output.csv', 'r+', newline='') as song_output:  # Open for reading and appending
-            writer = csv.writer(song_output, delimiter=',')
-            reader = csv.reader(song_output, delimiter=',')
-
-            # Prevent the same song from being written to the file within a given timespan (e.g., 15 minutes)
-            try:
+                # Prevent the same song from being written to the file within a given timespan (e.g., 15 minutes)
 
                 # First check if the CSV file is empty
                 if os.stat('song_output.csv').st_size == 0:
-                    print("DEBUG: empty CSV file detected! Writing header data...")
-                    writer.writerow(['TITLE: ', 'ARTIST: ', 'TIMESTAMP:'])
+                    print("Empty CSV file detected! Writing header data...")
+                    writer.writerow(['TITLE: ', 'ARTIST: ', 'DATE: ', 'TIME:'])
+                    song_output.seek(0)  # Seek to the new line to prevent an UnboundLocalError
                 else:
                     print("CSV file has data.")
 
@@ -66,8 +63,8 @@ def main():
                     print('Similar song found!')
 
                     # Format date strings into datetime objects
-                    current_song_time = datetime.strptime(song_data[3], time_format)
-                    last_song_time = datetime.strptime(last_line[3], time_format)
+                    current_song_time = datetime.strptime(song_data[3], TIME_FORMAT)
+                    last_song_time = datetime.strptime(last_line[3], TIME_FORMAT)
 
                     # Compare times to see if it's a duplicate
                     time_delta_full = current_song_time - last_song_time
@@ -82,13 +79,8 @@ def main():
                 else:  # If they aren't the same song (or it's been 15+ minutes), then write the data.
                     writer.writerow(song_data)
                     print('Song written!')
-            except UnboundLocalError:  # If no data exists, then no preventative action is needed
-                pass
 
-            # TODO: Close file here so next loop it can actually read from it
-            # TODO: If not, you could store the data in a list variable, then do one mass write at the end
-            # TODO: If you choose that route, then you need to ensure that the data isn't accidentally lost!
-            #time.sleep(SCRAPE_FREQUENCY)
+            time.sleep(SCRAPE_FREQUENCY)
 
 
 if __name__ == "__main__":
