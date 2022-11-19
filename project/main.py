@@ -1,9 +1,8 @@
-import os
 import time
 from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
-import csv
+import json
 
 SCRAPE_FREQUENCY = 120  # The time (in seconds) that the website should be checked.
 IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are under this value, then ignore write.
@@ -31,51 +30,68 @@ def main():
         scrape_date = datetime.now().strftime("%m-%d-%Y")
         scrape_time = datetime.now().strftime(TIME_FORMAT)
 
-        # Compile data into a writable list object
-        song_data = [song_title, song_artist, scrape_date, scrape_time]
+        # Compile data into a writable dict object
+        song_data = {
+            "Title": song_title,
+            "Artist": song_artist,
+            "Date": scrape_date,
+            "Time": scrape_time
+        }
+
+        # Used for comparison later (& convenient printing now ;) )
+        new_song = list(song_data.values())
 
         # Print output
-        print(f'\nSong Title:  {song_data[0]}\nSong Artist: {song_data[1]}'
-              f'\nScrape Date: {song_data[2]}\nScrape Time: {song_data[3]}\n')
+        print(f'\nSong Title:  {new_song[0]}\nSong Artist: {new_song[1]}'
+              f'\nScrape Date: {new_song[2]}\nScrape Time: {new_song[3]}\n')
 
-        # Write contents to CSV file
-        with open('song_output.csv', 'r+', newline='') as song_output:  # Reading & appending mode
-            writer = csv.writer(song_output, delimiter=',')
-            reader = csv.reader(song_output, delimiter=',')
+        # Read contents from JSON file
+        with open('song_output.json') as song_output:
+            # Load the JSON data into a list
+            temp_list = json.load(song_output)
 
-            # Prevent the same song from being written to the file within a given timespan (e.g., 15 minutes)
-            # First check if the CSV file is empty
-            if os.stat('song_output.csv').st_size == 0:
-                print("Empty CSV file detected! Writing header data...")
-                writer.writerow(['TITLE: ', 'ARTIST: ', 'DATE: ', 'TIME:'])
-                song_output.seek(0)  # Seek to the new line to prevent an UnboundLocalError
+            # Grab the latest dict entry in the list
+            try:
+                last_dict_item = next(reversed(temp_list))
+            except StopIteration:
+                print("the file is empty, so dont worry about comparing songs")
 
-            for line in reader:  # Jump to the last line
-                last_line = line
-            # If it's the same song, by the same artist, on the same day, then compare times
-            if last_line[0] == song_data[0] and last_line[1] == song_data[1] and last_line[2] == song_data[2]:
+                # Write first song to file
+                write_song(temp_list, song_data)
+            else:
+                # Convert both songs to lists
+                old_song = list(last_dict_item.values())
 
-                print('Similar song found!')
+                # If it's the same song, by the same artist, on the same day, then compare times
+                if old_song[0] == new_song[0] and old_song[1] == new_song[1] and old_song[2] == new_song[2]:
 
-                # Format date strings into datetime objects
-                current_song_time = datetime.strptime(song_data[3], TIME_FORMAT)
-                last_song_time = datetime.strptime(last_line[3], TIME_FORMAT)
+                    print('Similar song found!')
 
-                # Compare times to see if it's a duplicate
-                time_delta_full = current_song_time - last_song_time
-                time_delta_minutes = (int(time_delta_full.total_seconds() / 60))
+                    # Format date strings into datetime objects
+                    last_song_time = datetime.strptime(old_song[3], TIME_FORMAT)
+                    current_song_time = datetime.strptime(new_song[3], TIME_FORMAT)
 
-                if time_delta_minutes <= IGNORE_WRITE_TIME:
-                    print(f'Song has not changed in {time_delta_minutes} minute(s). Ignoring write...')
-                else:
-                    print('Song played today but not recently. Writing data...')
-                    writer.writerow(song_data)
+                    # Compare times to see if it's a duplicate
+                    time_delta_full = current_song_time - last_song_time
+                    time_delta_minutes = (int(time_delta_full.total_seconds() / 60))
 
-            else:  # If they aren't the same song (or it's been 15+ minutes), then write the data.
-                writer.writerow(song_data)
-                print('Song written!')
+                    if time_delta_minutes <= IGNORE_WRITE_TIME:
+                        print(f'Song has not changed in {time_delta_minutes} minute(s). Ignoring write...')
+                    else:
+                        print('Song played today but not recently. Writing data...')
+                        write_song(temp_list, song_data)
+
+                else:  # If they aren't the same song (or it's been 15+ minutes), then write the data.
+                    write_song(temp_list, song_data)
 
         time.sleep(SCRAPE_FREQUENCY)
+
+
+def write_song(cur_list, new_song_data):
+    cur_list.append(new_song_data)
+    with open('song_output.json', 'w') as song_output:
+        json.dump(cur_list, song_output, indent=4, separators=(', ', ': '), ensure_ascii=False)
+    print('Song written!')
 
 
 if __name__ == "__main__":
@@ -84,3 +100,4 @@ if __name__ == "__main__":
 # TODO: Spotify API stuff
 # TODO: Run quietly in background
 # TODO: Add command line functionality (help, config settings)
+# TODO: Migrate code into functions
