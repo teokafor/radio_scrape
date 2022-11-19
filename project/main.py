@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 import json
+import os
 
 SCRAPE_FREQUENCY = 120  # The time (in seconds) that the website should be checked.
 IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are under this value, then ignore write.
@@ -44,6 +45,11 @@ def main():
         # Print output
         print(f'\nSong Title:  {new_song[0]}\nSong Artist: {new_song[1]}'
               f'\nScrape Date: {new_song[2]}\nScrape Time: {new_song[3]}\n')
+
+        # If the file is fresh (i.e., no brackets or song data), then ensure that no errors occur
+        if os.stat('song_output.json').st_size == 0:
+            with open('song_output.json', 'w') as song_output:
+                song_output.write('[]')
 
         # Read contents from JSON file
         with open('song_output.json') as song_output:
