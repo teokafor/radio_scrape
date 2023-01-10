@@ -24,13 +24,15 @@
 
 import requests
 
+AUTH_URL = 'https://accounts.spotify.com/api/token'
+BASE_URL = 'https://api.spotify.com/v1/'
+
 
 def main():
     authorize()
 
 
 def authorize():
-    auth_url = 'https://accounts.spotify.com/api/token'
 
     with open('SpotCredentials.txt', 'r') as credentials:
         client_id = credentials.readline().split()
@@ -42,10 +44,34 @@ def authorize():
         'client_secret': client_secret,
     }
 
-    auth_response = requests.post(auth_url, data=auth_data)
-
+    auth_response = requests.post(AUTH_URL, data=auth_data)
     auth_response_data = auth_response.json()
     access_token = auth_response_data['access_token']
+
+    print(access_token)
+    # Set up authentication for easy access
+    headers = {
+        'Authorization': 'Bearer {token}'.format(token='access_token')
+    }
+
+    # Get the user's Spotify ID
+    #cur_user_id = requests.get(BASE_URL + 'me', headers=headers).json()
+    #print(cur_user_id)
+    #update_playlist(headers, client_id)
+
+
+
+
+
+
+
+
+
+def update_playlist(headers, client_id):
+    # Create the playlist
+    #req = requests.post(BASE_URL + 'users/{user_id}/playlists'.format(user_id='teokafor'), headers=headers).json()
+    #print(req)
+    pass
 
 
 if __name__ == "__main__""":
