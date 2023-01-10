@@ -7,8 +7,8 @@
 # be necessary to using it.
 
 # If enabled, the program should be able to create a playlist (if one does not already exist) on the end user's Spotify
-# account with a generic name. From there, the program should read from the JSON data set, and use artist and song info
-# to populate the playlist.
+# account with the name of the JSON file (to denote what station this data is from). From there, the program should
+# read from the JSON data set, and use artist and song info to populate the playlist.
 
 # To prevent long scan times, perhaps implement a "checkpoint" system, where the program will start reading the JSON
 # data from a defined point, instead of parsing the entire file each time. This checkpoint can be updated every time a
@@ -23,9 +23,14 @@
 # TODO: Write to playlist
 
 import requests
+import spotipy
+
+# Needed for the authorization code OAuth2 flow
+from spotipy.oauth2 import SpotifyOAuth
 
 AUTH_URL = 'https://accounts.spotify.com/api/token'
 BASE_URL = 'https://api.spotify.com/v1/'
+SCOPE = 'user-read-private playlist-modify-public'
 
 
 def main():
@@ -34,44 +39,15 @@ def main():
 
 def authorize():
 
-    with open('SpotCredentials.txt', 'r') as credentials:
-        client_id = credentials.readline().split()
-        client_secret = credentials.readline().split()
+    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=SCOPE))
 
-    auth_data = {
-        'grant_type': 'client_credentials',
-        'client_id': client_id,
-        'client_secret': client_secret,
-    }
+    # Get the current user's id.
+    cur_user_id = sp.current_user().get('id')
 
-    auth_response = requests.post(AUTH_URL, data=auth_data)
-    auth_response_data = auth_response.json()
-    access_token = auth_response_data['access_token']
-
-    print(access_token)
-    # Set up authentication for easy access
-    headers = {
-        'Authorization': 'Bearer {token}'.format(token='access_token')
-    }
-
-    # Get the user's Spotify ID
-    #cur_user_id = requests.get(BASE_URL + 'me', headers=headers).json()
-    #print(cur_user_id)
-    #update_playlist(headers, client_id)
-
-
-
-
-
-
-
-
-
-def update_playlist(headers, client_id):
-    # Create the playlist
-    #req = requests.post(BASE_URL + 'users/{user_id}/playlists'.format(user_id='teokafor'), headers=headers).json()
-    #print(req)
-    pass
+    # Create a playlist on the user's account
+    # TODO: Check if a playlist already exists with the same name, if so, skip step
+    # TODO: Change main.py code to give unique names to stations
+    results = sp.user_playlist_create(cur_user_id, 'API_GEN_PLYLST')
 
 
 if __name__ == "__main__""":
