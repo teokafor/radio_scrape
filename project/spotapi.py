@@ -46,7 +46,6 @@ def authorize():
 
     # Create a playlist on the user's account
     # TODO: Check if a playlist already exists with the same name, if so, skip step
-    # TODO: Change main.py code to give unique names to stations
     results = sp.user_playlist_create(cur_user_id, 'API_GEN_PLYLST')
 
 

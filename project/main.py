@@ -13,6 +13,12 @@ TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 def main():
     while True:  # Loop until the program is closed
 
+        # Ask the user for the name of the radio station (used for Spotify playlist labeling)
+        # TODO: Check local file for names of preexisting stations and show that list first
+        # TODO: Wrap in try/except for special characters, as the OS won't like those.
+        station_name = input("Enter the radio station's name: ")
+        print(station_name)
+
         # The URL to gather data from
         resource = requests.get("https://listen.klove.com/Christmas")
 
@@ -46,15 +52,15 @@ def main():
         print(f'\nSong Title:  {new_song[0]}\nSong Artist: {new_song[1]}'
               f'\nScrape Date: {new_song[2]}\nScrape Time: {new_song[3]}\n')
 
-        # If the file is fresh (i.e., no brackets or song data), then ensure that no errors occur
-        if os.stat('song_output.json').st_size == 0:
-            with open('song_output.json', 'w') as song_output:
-                song_output.write('[]')
+        # If the file does not exist (or it does but is empty), create it and/or write preliminary data
+        if not (os.path.isfile(f'{station_name}.json')) or os.stat(f'{station_name}.json').st_size == 0:
+            with open(f'{station_name}.json', 'w') as song_file:
+                song_file.write('[]')
 
         # Read contents from JSON file
-        with open('song_output.json') as song_output:
+        with open(f'{station_name}.json') as song_file:
             # Load the JSON data into a list
-            temp_list = json.load(song_output)
+            temp_list = json.load(song_file)
 
             # Grab the latest dict entry in the list
             try:
@@ -63,7 +69,7 @@ def main():
                 print("the file is empty, so dont worry about comparing songs")
 
                 # Write first song to file
-                write_song(temp_list, song_data)
+                write_song(temp_list, song_data, station_name)
             else:
                 # Convert both songs to lists
                 old_song = list(last_dict_item.values())
@@ -85,18 +91,18 @@ def main():
                         print(f'Song has not changed in {time_delta_minutes} minute(s). Ignoring write...')
                     else:
                         print('Song played today but not recently. Writing data...')
-                        write_song(temp_list, song_data)
+                        write_song(temp_list, song_data, station_name)
 
                 else:  # If they aren't the same song (or it's been 15+ minutes), then write the data.
-                    write_song(temp_list, song_data)
+                    write_song(temp_list, song_data, station_name)
 
         time.sleep(SCRAPE_FREQUENCY)
 
 
-def write_song(cur_list, new_song_data):
+def write_song(cur_list, new_song_data, station_name):
     cur_list.append(new_song_data)
-    with open('song_output.json', 'w') as song_output:
-        json.dump(cur_list, song_output, indent=4, separators=(', ', ': '), ensure_ascii=False)
+    with open(f'{station_name}.json', 'w') as song_file:
+        json.dump(cur_list, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
     print('Song written!')
 
 
@@ -107,3 +113,4 @@ if __name__ == "__main__":
 # TODO: Run quietly in background
 # TODO: Add command line functionality (help, config settings)
 # TODO: Migrate code into functions
+# TODO: Multithread for multiple stations at once?
