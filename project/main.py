@@ -57,6 +57,9 @@ def main():
             json.dump(temp_dict, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
             # TODO: After the new dict write, break and reshow the menu.
 
+    # TODO: Does this not close??
+    song_file = json.load(open('stations.json'))
+
     station_url = song_file.get(f'{user_choice}')[0].get('url')
     song_title_id = song_file.get(f'{user_choice}')[0].get('title_id')
     song_artist_id = song_file.get(f'{user_choice}')[0].get('artist_id')
