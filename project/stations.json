@@ -1,0 +1,41 @@
+{
+    "1": [
+        {
+            "name": "KLove Christmas", 
+            "url": "https://listen.klove.com/Christmas", 
+            "title_id": "nowPlaying-title", 
+            "artist_id": "nowPlaying-artist", 
+            "playlist_id": "72K9NLsisYGlynNMb1ywMB"
+        }, 
+        {
+            "Title": "Where Are You Christmas", 
+            "Artist": "Faith Hill", 
+            "Date": "01-12-2023", 
+            "Time": "12:18"
+        }, 
+        {
+            "Title": "Where Are You Christmas", 
+            "Artist": "Faith Hill", 
+            "Date": "01-12-2023", 
+            "Time": "15:18"
+        }, 
+        {
+            "Title": "Emmanuel", 
+            "Artist": "Love & The Outcome", 
+            "Date": "01-12-2023", 
+            "Time": "19:50"
+        }, 
+        {
+            "Title": "Winter Wonderland", 
+            "Artist": "Jewel", 
+            "Date": "01-12-2023", 
+            "Time": "19:50"
+        }, 
+        {
+            "Title": "Little Drummer Boy", 
+            "Artist": "for KING & COUNTRY", 
+            "Date": "01-12-2023", 
+            "Time": "19:58"
+        }
+    ]
+}

@@ -5,22 +5,67 @@ from datetime import datetime
 import json
 import os
 
-SCRAPE_FREQUENCY = 120  # The time (in seconds) that the website should be checked.
+SCRAPE_FREQUENCY = 5  # The time (in seconds) that the website should be checked.
 IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are under this value, then ignore write.
 TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 
 
 def main():
-    while True:  # Loop until the program is closed
 
+    # TODO: Does this not close??
+    song_file = json.load(open('stations.json'))
+
+    #print(song_file.get('station0')[0].get('name'))
+
+    increment_value = 0
+    for entry in song_file:
+        increment_value += 1
+        station_name = song_file.get(f'{increment_value}')[0].get('name')
+        print(f'{increment_value}.\t{station_name}')
+
+    # TODO: Sanitize.
+    user_choice = int(input(f'Please select a station (or select \'{increment_value + 1}\' to create a new one.) '))
+
+    # In other words, the user has not picked a predefined radio station
+    if user_choice == increment_value + 1:
         # Ask the user for the name of the radio station (used for Spotify playlist labeling)
         # TODO: Check local file for names of preexisting stations and show that list first
         # TODO: Wrap in try/except for special characters, as the OS won't like those.
-        station_name = input("Enter the radio station's name: ")
-        print(station_name)
+        new_station_name = input("Enter the radio station's name: ")
+        new_station_url = input("The URL: ")
+        new_title_id = input("Now paste the song title id (html element): ")
+        new_artist_id = input("Next, the artist id (html element): ")
+
+        new_song_data = {
+            "name": new_station_name,
+            "url": new_station_url,
+            "title_id": new_title_id,
+            "artist_id": new_artist_id,
+            "playlist_id": "None"
+        }
+
+        nsd = {f'{user_choice}': [new_song_data]}
+
+        # Do a special write for the new metadata
+        with open('stations.json', 'r+') as song_file:
+            temp_dict = json.load(song_file)
+            temp_dict.update(nsd)
+
+            # Clear the file before writing
+            song_file.truncate(0)
+            song_file.seek(0)
+            json.dump(temp_dict, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
+            # TODO: After the new dict write, break and reshow the menu.
+
+    station_url = song_file.get(f'{user_choice}')[0].get('url')
+    song_title_id = song_file.get(f'{user_choice}')[0].get('title_id')
+    song_artist_id = song_file.get(f'{user_choice}')[0].get('artist_id')
+    spotify_playlist_id = song_file.get(f'{user_choice}')[0].get('playlist_id')
+
+    while True:  # Loop until the program is closed
 
         # The URL to gather data from
-        resource = requests.get("https://listen.klove.com/Christmas")
+        resource = requests.get(station_url)
 
         if resource.status_code != 200:  # Throw an error if the page cannot be returned for any reason.
             print("couldn't fetch page!")
@@ -32,8 +77,8 @@ def main():
         raw_data = BeautifulSoup(content.decode('utf-8'), 'html.parser')
 
         # Collect necessary information
-        song_title = raw_data.find(id='nowPlaying-title').string
-        song_artist = raw_data.find(id='nowPlaying-artist').string
+        song_title = raw_data.find(id=song_title_id).string
+        song_artist = raw_data.find(id=song_artist_id).string
         scrape_date = datetime.now().strftime("%m-%d-%Y")
         scrape_time = datetime.now().strftime(TIME_FORMAT)
 
@@ -53,14 +98,15 @@ def main():
               f'\nScrape Date: {new_song[2]}\nScrape Time: {new_song[3]}\n')
 
         # If the file does not exist (or it does but is empty), create it and/or write preliminary data
-        if not (os.path.isfile(f'{station_name}.json')) or os.stat(f'{station_name}.json').st_size == 0:
-            with open(f'{station_name}.json', 'w') as song_file:
+        if not (os.path.isfile('stations.json')) or os.stat('stations.json').st_size == 0:
+            with open('stations.json', 'w') as song_file:
                 song_file.write('[]')
 
         # Read contents from JSON file
-        with open(f'{station_name}.json') as song_file:
+        with open('stations.json') as song_file:
             # Load the JSON data into a list
             temp_list = json.load(song_file)
+            temp_list = temp_list.get(f'{user_choice}')
 
             # Grab the latest dict entry in the list
             try:
@@ -69,7 +115,7 @@ def main():
                 print("the file is empty, so dont worry about comparing songs")
 
                 # Write first song to file
-                write_song(temp_list, song_data, station_name)
+                write_song(song_data, user_choice)
             else:
                 # Convert both songs to lists
                 old_song = list(last_dict_item.values())
@@ -91,18 +137,27 @@ def main():
                         print(f'Song has not changed in {time_delta_minutes} minute(s). Ignoring write...')
                     else:
                         print('Song played today but not recently. Writing data...')
-                        write_song(temp_list, song_data, station_name)
+                        write_song(song_data, user_choice)
 
                 else:  # If they aren't the same song (or it's been 15+ minutes), then write the data.
-                    write_song(temp_list, song_data, station_name)
+                    write_song(song_data, user_choice)
 
+        # Repeat the while loop.
         time.sleep(SCRAPE_FREQUENCY)
 
 
-def write_song(cur_list, new_song_data, station_name):
-    cur_list.append(new_song_data)
-    with open(f'{station_name}.json', 'w') as song_file:
-        json.dump(cur_list, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
+def write_song(new_song_data, cur_station):
+    with open('stations.json', 'r+') as song_file:
+        temp_data_all = json.load(song_file)
+        temp_data_scoped = temp_data_all.get(f'{cur_station}')
+        temp_data_scoped.append(new_song_data)
+
+        temp_data_all.update({f'{cur_station}': temp_data_scoped})
+
+
+        song_file.truncate(0)
+        song_file.seek(0)
+        json.dump(temp_data_all, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
     print('Song written!')
 
 
@@ -111,6 +166,5 @@ if __name__ == "__main__":
 
 # TODO: Spotify API stuff
 # TODO: Run quietly in background
-# TODO: Add command line functionality (help, config settings)
 # TODO: Migrate code into functions
 # TODO: Multithread for multiple stations at once?
