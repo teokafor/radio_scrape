@@ -5,7 +5,9 @@ from datetime import datetime
 import json
 import os
 
-SCRAPE_FREQUENCY = 5  # The time (in seconds) that the website should be checked.
+import spotapi
+
+SCRAPE_FREQUENCY = 120  # The time (in seconds) that the website should be checked.
 IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are under this value, then ignore write.
 TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 
@@ -13,22 +15,32 @@ TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 def user_controls():
     song_file = json.load(open('stations.json'))
 
+    # Stations.
     increment_value = 0
     for entry in song_file:
         increment_value += 1
         station_name = song_file.get(f'{increment_value}')[0].get('name')
         print(f'{increment_value}.\t{station_name}')
 
+    # Other options.
+    print(f'----------------------------------\n0. Program Options\n{increment_value+1}. New Station')
+
     # Check that the input is valid
-    valid_input_range = range(1, increment_value + 2)  # TODO: What does this look like with an empty json file?
+    valid_input_range = range(0, increment_value + 2)  # TODO: What does this look like with an empty json file?
     while True:
-        user_choice = int(input(f'Please select a station (or select \'{increment_value + 1}\' to create a new one.) '))
+        try:
+            user_choice = int(input(f'Please select an option from the list: '))
+        except ValueError:
+            user_choice = -1
         if user_choice not in valid_input_range:
             print('Please select a valid option from the list.\n')
         else:
             break
 
-    if user_choice != (increment_value + 1):
+    if user_choice == 0:
+        print('Program options (coming soon)')
+        exit()
+    elif user_choice != (increment_value + 1):
         return user_choice
     else:
         new_station_name = input("Enter the radio station's name: ")  # Used to label the Spotify playlist
@@ -36,14 +48,14 @@ def user_controls():
         new_title_id = input("Now paste the song title id (html element): ")  # The name of the element with song title.
         new_artist_id = input("Next, the artist id (html element): ")  # The name of the element with artist name
 
-        new_song_data = {  # Format the data into a dictionary
+        new_station_data = {  # Format the data into a dictionary
             "name": new_station_name,
             "url": new_station_url,
             "title_id": new_title_id,
             "artist_id": new_artist_id,
             "playlist_id": "None"
         }
-        nsd = {f'{user_choice}': [new_song_data]}  # More formatting
+        nsd = {f'{user_choice}': [new_station_data]}  # More formatting
 
         # Do a special write for the new metadata
         with open('stations.json', 'r+') as song_file:
@@ -56,6 +68,7 @@ def user_controls():
             json.dump(temp_dict, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
 
         user_controls()  # Show options again after a new station has been made
+        # TODO: Fix bug where picking a newly created station causes a 1st time crash (won't crash 2nd time)
 
 
 def main():
@@ -67,7 +80,7 @@ def main():
     station_url = song_file.get(f'{user_choice}')[0].get('url')
     song_title_id = song_file.get(f'{user_choice}')[0].get('title_id')
     song_artist_id = song_file.get(f'{user_choice}')[0].get('artist_id')
-    spotify_playlist_id = song_file.get(f'{user_choice}')[0].get('playlist_id')
+    #spotify_playlist_id = song_file.get(f'{user_choice}')[0].get('playlist_id')
 
     while True:  # Loop until the program is closed
 
@@ -155,17 +168,26 @@ def main():
 
 def write_song(new_song_data, cur_station):
     with open('stations.json', 'r+') as song_file:
-        temp_data_all = json.load(song_file)
-        temp_data_scoped = temp_data_all.get(f'{cur_station}')
-        temp_data_scoped.append(new_song_data)
+        temp_data_all = json.load(song_file)  # Grab all the json data
+        temp_data_scoped = temp_data_all.get(f'{cur_station}')  # Grab the part we want to update
+        temp_data_scoped.append(new_song_data)  # Write new data to the desired location
+        temp_data_all.update({f'{cur_station}': temp_data_scoped})  # Reintegrate new data into json file
 
-        temp_data_all.update({f'{cur_station}': temp_data_scoped})
+        # Grab the station metadata while the file is open
+        metadata = temp_data_all.get(f'{cur_station}')[0]
 
-
+        # Empty the file and write new data
         song_file.truncate(0)
         song_file.seek(0)
         json.dump(temp_data_all, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
     print('Song written!')
+
+    spotify_update(cur_station, metadata, new_song_data)
+
+
+# TODO: Is this function redundant?
+def spotify_update(dict_key, meta_dict, song_dict):
+    spotapi.main(dict_key, meta_dict, song_dict)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 This file should store:
 ----- per station -----
-> The list of station files created by the user, and their respective elements and URLs
-> The index of the last song added to spotify for each station
-> ID's for created spotify playlists
+> The list of station files created by the user, and their respective elements and URLs     DONE
+> The index number of the next song to be added to the spotify playlist
+> ID's for created spotify playlists                                                        DONE
 
 ----- program options -----
-> Whether spotify playlists should be updated or not
-> Whether duplicates can be added to playlists or not
-> Control over constants (scrape freq., ignore write time)
+> Disable/Enable Spotify integration flag
+> Write/Don't write duplicate songs to Spotify playlist flag
+> Scrape Frequency
+> Ignore Write Time
