@@ -40,14 +40,14 @@ def main():
     new_playlist_id = sp.user_playlist_create(cur_user_id, 'API_GEN_PLYLST').get('id')
 
     # Open the locally stored JSON file
-    song_file = json.load(open('song_output.json'))
+    song_file = json.load(open('stations.json'))
 
     # For each song in the local file, search for it on spotify and add it to the playlist
     for i in song_file:
         cur_query = f"{i.get('Title')} by {i.get('Artist')}"
         cur_song_id = f'spotify:track:' \
                       f'{sp.search(cur_query, 1, 0, "track", cur_user_region)["tracks"]["items"][0]["id"]}'
-        sp.playlist_add_items(new_playlist_id, [cur_song_id])
+      #  sp.playlist_add_items(new_playlist_id, [cur_song_id])
 
 
 if __name__ == "__main__":

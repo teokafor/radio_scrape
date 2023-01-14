@@ -10,12 +10,8 @@ IGNORE_WRITE_TIME = 25  # If songs found are the same as the last entry and are 
 TIME_FORMAT = "%H:%M"  # Used to format (and un-format) time data.
 
 
-def main():
-
-    # TODO: Does this not close??
+def user_controls():
     song_file = json.load(open('stations.json'))
-
-    #print(song_file.get('station0')[0].get('name'))
 
     increment_value = 0
     for entry in song_file:
@@ -23,28 +19,31 @@ def main():
         station_name = song_file.get(f'{increment_value}')[0].get('name')
         print(f'{increment_value}.\t{station_name}')
 
-    # TODO: Sanitize.
-    user_choice = int(input(f'Please select a station (or select \'{increment_value + 1}\' to create a new one.) '))
+    # Check that the input is valid
+    valid_input_range = range(1, increment_value + 2)  # TODO: What does this look like with an empty json file?
+    while True:
+        user_choice = int(input(f'Please select a station (or select \'{increment_value + 1}\' to create a new one.) '))
+        if user_choice not in valid_input_range:
+            print('Please select a valid option from the list.\n')
+        else:
+            break
 
-    # In other words, the user has not picked a predefined radio station
-    if user_choice == increment_value + 1:
-        # Ask the user for the name of the radio station (used for Spotify playlist labeling)
-        # TODO: Check local file for names of preexisting stations and show that list first
-        # TODO: Wrap in try/except for special characters, as the OS won't like those.
-        new_station_name = input("Enter the radio station's name: ")
-        new_station_url = input("The URL: ")
-        new_title_id = input("Now paste the song title id (html element): ")
-        new_artist_id = input("Next, the artist id (html element): ")
+    if user_choice != (increment_value + 1):
+        return user_choice
+    else:
+        new_station_name = input("Enter the radio station's name: ")  # Used to label the Spotify playlist
+        new_station_url = input("The URL: ")  # Used by bs4 to fetch the data
+        new_title_id = input("Now paste the song title id (html element): ")  # The name of the element with song title.
+        new_artist_id = input("Next, the artist id (html element): ")  # The name of the element with artist name
 
-        new_song_data = {
+        new_song_data = {  # Format the data into a dictionary
             "name": new_station_name,
             "url": new_station_url,
             "title_id": new_title_id,
             "artist_id": new_artist_id,
             "playlist_id": "None"
         }
-
-        nsd = {f'{user_choice}': [new_song_data]}
+        nsd = {f'{user_choice}': [new_song_data]}  # More formatting
 
         # Do a special write for the new metadata
         with open('stations.json', 'r+') as song_file:
@@ -55,10 +54,15 @@ def main():
             song_file.truncate(0)
             song_file.seek(0)
             json.dump(temp_dict, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
-            # TODO: After the new dict write, break and reshow the menu.
 
+        user_controls()  # Show options again after a new station has been made
+
+
+def main():
     # TODO: Does this not close??
     song_file = json.load(open('stations.json'))
+
+    user_choice = user_controls()
 
     station_url = song_file.get(f'{user_choice}')[0].get('url')
     song_title_id = song_file.get(f'{user_choice}')[0].get('title_id')
