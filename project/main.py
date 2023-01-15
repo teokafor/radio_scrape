@@ -48,12 +48,12 @@ def user_controls():
         new_title_id = input("Now paste the song title id (html element): ")  # The name of the element with song title.
         new_artist_id = input("Next, the artist id (html element): ")  # The name of the element with artist name
 
-        new_station_data = {  # Format the data into a dictionary
+        new_station_data = {  # Format the metadata into a dictionary
             "name": new_station_name,
             "url": new_station_url,
             "title_id": new_title_id,
             "artist_id": new_artist_id,
-            "playlist_id": "None"
+            "playlist_id": "None",
         }
         nsd = {f'{user_choice}': [new_station_data]}  # More formatting
 
@@ -80,7 +80,6 @@ def main():
     station_url = song_file.get(f'{user_choice}')[0].get('url')
     song_title_id = song_file.get(f'{user_choice}')[0].get('title_id')
     song_artist_id = song_file.get(f'{user_choice}')[0].get('artist_id')
-    #spotify_playlist_id = song_file.get(f'{user_choice}')[0].get('playlist_id')
 
     while True:  # Loop until the program is closed
 
@@ -182,18 +181,24 @@ def write_song(new_song_data, cur_station):
         json.dump(temp_data_all, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
     print('Song written!')
 
-    spotify_update(cur_station, metadata, new_song_data)
+    spotify_update(cur_station)
 
 
 # TODO: Is this function redundant?
-def spotify_update(dict_key, meta_dict, song_dict):
-    spotapi.main(dict_key, meta_dict, song_dict)
+def spotify_update(dict_key):
+    song_file = json.load(open('stations.json'))
+
+    # Gather the necessary data
+    station_name = song_file.get(f'{dict_key}')[0].get('name')
+    playlist_id = song_file.get(f'{dict_key}')[0].get('playlist_id')
+    song_name = song_file.get(f'{dict_key}')[-1].get('Title')
+    artist_name = song_file.get(f'{dict_key}')[-1].get('Artist')
+    spotapi.main(dict_key, station_name, playlist_id, song_name, artist_name)
 
 
 if __name__ == "__main__":
     main()
 
-# TODO: Spotify API stuff
 # TODO: Run quietly in background
 # TODO: Migrate code into functions
 # TODO: Multithread for multiple stations at once?

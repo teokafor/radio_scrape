@@ -27,29 +27,28 @@ BASE_URL = 'https://api.spotify.com/v1/'
 SCOPE = 'user-read-private playlist-modify-public'
 
 
-def main(dict_key, meta_dict, song_dict):  # If playlist id is None, then default to making a new playlist
+def main(meta_key, station_name, playlist_id, song_name, artist_name):
 
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=SCOPE))
 
     # Get the current user's id and region.
     cur_user_id = sp.current_user().get('id')
     cur_user_region = sp.current_user().get('country')
-    playlist_id = meta_dict.get("playlist_id")
 
     if playlist_id == 'None':  # No matching playlist id
         # Create a playlist on the user's account and grab its id.
-        playlist_id = sp.user_playlist_create(cur_user_id, f'{meta_dict.get("name")}').get('id')
+        playlist_id = sp.user_playlist_create(cur_user_id, station_name).get('id')
         # TODO: Write the newly created playlist ID to the json file.
         with open('stations.json', 'r+') as song_file:
             temp_data_all = json.load(song_file)  # Grab all the json data
-            temp_data_scoped = temp_data_all.get(f'{dict_key}')  # Grab the part we want to update
+            temp_data_scoped = temp_data_all.get(f'{meta_key}')  # Grab the part we want to update
             temp_data_scoped[0].update({'playlist_id': playlist_id})  # Write new data to the desired location
-            temp_data_all.update({f'{dict_key}': temp_data_scoped})  # Reintegrate new data into json file
+            temp_data_all.update({f'{meta_key}': temp_data_scoped})  # Reintegrate new data into json file
             song_file.truncate(0)
             song_file.seek(0)
             json.dump(temp_data_all, song_file, indent=4, separators=(', ', ': '), ensure_ascii=False)
 
-    cur_query = f"{song_dict.get('Title')} by {song_dict.get('Artist')}"
+    cur_query = f"{song_name} by {artist_name}"
     cur_song_id = f'spotify:track:{sp.search(cur_query, 5, 0, "track", cur_user_region)["tracks"]["items"][0]["id"]}'
     sp.playlist_add_items(playlist_id, [cur_song_id])
 
